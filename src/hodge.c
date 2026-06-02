@@ -243,11 +243,9 @@ SparseMatrix *sc_hodge_laplacian_1(const SimplicialComplex *sc)
         sm_free(b2);
         sm_free(b2t);
     } else {
-        term2 = sm_from_dense(sc->n_edges, sc->n_edges,
-                               (double[]){});  /* zero matrix */
-        /* Actually allocate a zero dense matrix */
-        double *zd = calloc(sc->n_edges * sc->n_edges, sizeof(double));
-        sm_free(term2);
+        /* Zero matrix: allocate proper ne×ne dense buffer instead of
+         * compound literal which would be a zero-length array (UB). */
+        double *zd = calloc((size_t)sc->n_edges * sc->n_edges, sizeof(double));
         term2 = sm_from_dense(sc->n_edges, sc->n_edges, zd);
         free(zd);
     }
@@ -339,8 +337,6 @@ int la_least_squares(const SparseMatrix *A, const double *b, double *x,
 
     double *atb = calloc(cols, sizeof(double));
     double *tmp = calloc(rows, sizeof(double));
-    la_spmv(at, b, atb);  /* This is wrong dimension; do it manually */
-
     /* Compute A^T b properly */
     memset(atb, 0, cols * sizeof(double));
     for (int i = 0; i < rows; i++)
